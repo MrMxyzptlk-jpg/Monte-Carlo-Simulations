@@ -22,7 +22,7 @@ program rejection_method
     use mzranmod
     implicit none
 
-    real(kind=pr)             :: constants(4), integral, x_lowerLim, x_upperLim, y_lowerLim, y_upperLim, efficiency
+    real(kind=pr)             :: constants(4), integral, MC_integral, x_lowerLim, x_upperLim, y_lowerLim, y_upperLim, efficiency
     integer(kind=int_large)   :: samples, unitnum
 
     abstract interface
@@ -64,10 +64,10 @@ function_pointer => sinusoid
 
     constants = (/1._pr,1._pr,1._pr,1._pr/)
     call mzran_init()
+    integral = sinusoid_integral(x_lowerLim, x_upperLim, constants)
 
-    call MC_rejection(x_lowerLim, x_upperLim, y_lowerLim, y_upperLim, function_pointer, constants, samples, integral, efficiency)
+    call MC_rejection(x_lowerLim, x_upperLim, y_lowerLim, y_upperLim, function_pointer, constants, samples, MC_integral, efficiency)
     print*, "samples | MC integral | analytic integral | Abs error | Efficiency"
-    print format_style1, samples, integral, sinusoid_integral(x_lowerLim, x_upperLim, constants)&
-        , abs(sinusoid_integral(x_lowerLim, x_upperLim, constants) - integral ), efficiency
+    print format_style1, samples, MC_integral, integral, abs(integral - MC_integral ), efficiency
 
 end program rejection_method
