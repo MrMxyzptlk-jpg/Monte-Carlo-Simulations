@@ -1,0 +1,6 @@
+&calculation
+    exponent    = 4,
+    lower_lim   = 0,
+    upper_lim   = 1,
+    max_sample_exponent = 10000
+/

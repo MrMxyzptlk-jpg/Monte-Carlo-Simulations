@@ -1,0 +1,5 @@
+&calculation
+    exponent    = 3,
+    Integration_points  = 1000,
+    MC_samples = 100000
+/

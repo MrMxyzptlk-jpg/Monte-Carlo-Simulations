@@ -1,0 +1,4 @@
+&calculation
+    N_variables = 100,
+    samples = 100000
+/

@@ -1,0 +1,7 @@
+&calculation
+    dim       = 2,
+    walkers   = 100000,
+    max_steps = 100,
+    walkers_saved = 20,
+    save_walks = .false.
+/

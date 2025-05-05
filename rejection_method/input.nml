@@ -1,0 +1,7 @@
+&calculation
+    x_lowerLim = 0,
+    x_upperLim = 1,
+    y_lowerLim = -2,
+    y_upperLim = 2,
+    samples    = 100000
+/
