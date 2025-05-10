@@ -4,6 +4,6 @@ gfortran modulos/constantes.f90 \
         modulos/materials.f90 \
         modulos/mzranmod.f90 \
         modulos/electron_module.f90 \
-        electron_scatter.f90 -o run
+        electron_scatter.f90 -o run.exe
 
 echo

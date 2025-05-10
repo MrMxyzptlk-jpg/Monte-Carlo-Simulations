@@ -2,14 +2,19 @@
     bulk_material = "C",
     ray_tilt      = 0,
     E_min         = 0.5,
-    E_max         = 30
+    E_max         = 30,
+    covering_thickness = 2e-6,
+    covering         = .false.,
+    surface_material = "Au",
 /
 
 &calculation
-    Num_electrons = 250,
+    Num_electrons = 1000,
+    Num_trajectories = 100,
     BSE_tol = 1e-6
 /
 
 &tasks
-    particle_type = "electrons"
+    particle_type = "electrons",
+    track_trajectories = .true.
 /

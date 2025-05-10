@@ -6,7 +6,7 @@ module electron_module
     use constantes
     implicit none
     private
-    public :: Electron, track_trajectory, init_angles, init_materials, init_energy_range
+    public :: Electron, track_trajectory, init_angles, init_materials, init_energy_range, MC_step
 
     type :: Electron
         real(pr) :: x, y, z
@@ -224,5 +224,17 @@ subroutine track_trajectory(unit, step, x, y, z, energy)
     write(unit, format_style_data) step, x, y, z, energy
 end subroutine track_trajectory
 
+subroutine MC_step(sample, i)
+    type(Electron), intent(inout)   :: sample(:)
+    integer, intent(in)             :: i
+    real(pr)                        :: R1, R2, R3
+
+    ! Walk randomly
+    R1 = rmzran()
+    R2 = rmzran()
+    R3 = rmzran()
+    call sample(i)%do_step(R1, R2, R3)
+
+end subroutine MC_step
 
 end module electron_module
