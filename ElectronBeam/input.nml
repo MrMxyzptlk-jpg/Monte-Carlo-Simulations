@@ -1,0 +1,15 @@
+&physical
+    bulk_material = "C",
+    ray_tilt      = 0,
+    E_min         = 0.5,
+    E_max         = 30
+/
+
+&calculation
+    Num_electrons = 250,
+    BSE_tol = 1e-6
+/
+
+&tasks
+    particle_type = "electrons"
+/

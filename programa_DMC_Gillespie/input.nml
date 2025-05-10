@@ -1,0 +1,11 @@
+&physical
+    volume = 10
+/
+
+&calculation
+    max_iterations = 100
+/
+
+&tasks
+   equations = 1
+/
