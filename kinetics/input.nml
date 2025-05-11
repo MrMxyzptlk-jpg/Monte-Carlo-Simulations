@@ -7,7 +7,7 @@
 /
 
 &tasks
-   equations = 'Gillespie'
+   equations = 'Gillespie' ! Options: 'Gillespie', 'Consecutive' or 'Prey-Predator'
 /
 
 &initial_conditions

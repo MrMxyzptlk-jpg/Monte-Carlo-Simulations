@@ -43,7 +43,7 @@ PROGRAM KMC
         read(unitnum, nml=calculation)
         read(unitnum, nml=tasks)
 
-        ! Select the system of equations to read the initial conditions of said system
+        ! Select the system of equations to read the initial conditions of said system. Note that Fortran is NOT case-sensitive in case select for character variables.
         select case(equations)
             case("Gillespie")
                 initialize => Gillespie_init
@@ -52,14 +52,14 @@ PROGRAM KMC
                 num_eqs = 2
                 num_species = 4
 
-            case("consecutive")
+            case("Consecutive")
                 initialize => consecutive_init
                 doProcess  => consecutive_process
 
                 num_eqs = 2
                 num_species = 3
 
-            case("preyPredator")
+            case("Prey-Predator")
                 initialize => preyPredator_init
                 doProcess  => preyPredator_process
 
