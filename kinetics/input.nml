@@ -9,3 +9,17 @@
 &tasks
    equations = 1
 /
+
+&initial_conditions
+    ! Gillespie equations' example
+    species_total = 100, 0, 20, 0,
+    velocity_cte  = 1, 1
+
+    ! Consecutive equations' example
+    ! species_total = 100, 0, 50,
+    ! velocity_cte  = 1, 1
+
+    ! Prey-Predator equations' example
+    ! species_total = 100, 1,
+    ! velocity_cte  = 1, 1, 1
+/

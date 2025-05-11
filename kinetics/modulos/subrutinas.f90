@@ -2,126 +2,139 @@ MODULE subrutinas
     use mzranmod
     use precision
 
-    integer                     :: num_species=4              ! (numero de especies)
-    integer                     :: num_eqs=2              ! (numero de ecuaciones)
+    integer                     :: num_species
+    integer                     :: num_eqs
     integer                     :: max_iterations
-    real(pr)                    :: volume
-    character(21),parameter     :: salida='datos/KMC-prueba1.dat'    ! archivo de salida
-    real(pr)                    :: inv_vol, inv_vol2
-    real(pr), allocatable       :: x(:)   ! especies
-    real(pr), allocatable       :: k(:)   ! constantes de velocidad
-    real(pr), allocatable       :: a(:)   ! velocidades
+    character(21), parameter    :: salida='datos/KMC-prueba1.dat'    ! output file
+    real(pr)                    :: velocities_sum, volume, inv_vol, inv_vol2
+    real(pr), allocatable       :: species_total(:)   ! species' net quantities
+    real(pr), allocatable       :: velocity_cte(:)   ! velocity constants
+    real(pr), allocatable       :: velocity(:)
 
 contains
 
-subroutine inicio_test(r)
-    real(pr), intent(out)    :: r        ! suma de velocidades
+subroutine Gillespie_init()
 
-    num_eqs = 2
-    num_species = 4
-    allocate(x(num_species), a(num_eqs),k(num_eqs))
+    velocity(1) = velocity_cte(1)*species_total(1)*inv_vol
+    velocity(2) = velocity_cte(2)*species_total(2)*species_total(3)*inv_vol2
 
+    velocities_sum = sum(velocity)
 
-    x = 0._pr
+end subroutine Gillespie_init
 
-    x(1) = 100._pr
-    x(3) = 20._pr
+subroutine consecutive_init()
 
-    k = 1._pr
+    velocity(1) = velocity_cte(1)*species_total(1)*inv_vol
+    velocity(2) = velocity_cte(2)*species_total(2)*inv_vol
 
-    a(1) = k(1)*x(1)*inv_vol
-    a(2) = k(2)*x(2)*x(3)*inv_vol2
+    velocities_sum = sum(velocity)
 
-    r=0._pr
+end subroutine consecutive_init
 
-    r = r + sum(a)
+subroutine preyPredator_init()
 
-    call mzran_init()
+    velocity(1) = velocity_cte(1)*species_total(1)
+    velocity(2) = velocity_cte(2)*species_total(2)*species_total(1)
+    velocity(3) = velocity_cte(3)*species_total(2)
 
-end subroutine inicio_test
+    velocities_sum = sum(velocity)
 
-subroutine inicio_test2(r)
-    real(pr), intent(out)    :: r        ! suma de velocidades
+end subroutine preyPredator_init
 
-    num_eqs = 2
-    num_species = 4
-    allocate(x(num_species), a(num_eqs),k(num_eqs))
+subroutine Gillespie_process(selected_process)
+    integer, intent(in)       :: selected_process
 
-
-    x = 0._pr
-
-    x(1) = 100._pr
-    x(3) = 20._pr
-
-    k = 1._pr
-
-    a(1) = k(1)*x(1)*inv_vol
-    a(2) = k(2)*x(2)*x(3)*inv_vol2
-
-    r=0._pr
-
-    r = r + sum(a)
-
-    call mzran_init()
-
-end subroutine inicio_test2
-
-subroutine ejecuta_process(r,nu)
-    integer, intent(in)       :: nu         ! proceso selecionado
-    real(pr),intent(inout)    :: r          ! suma de velocidades
-
-    select case(nu)
+    select case(selected_process)
         case(1)
-            x(1)=x(1)-1._pr
-            x(2)=x(2)+1._pr
+            species_total(1) = species_total(1) - 1._pr
+            species_total(2) = species_total(2) + 1._pr
         case(2)
-            x(2)=x(2)-1._pr
-            x(3)=x(3)-1._pr
-            x(4)=x(4)+1._pr
+            species_total(2) = species_total(2) - 1._pr
+            species_total(3) = species_total(3) - 1._pr
+            species_total(4) = species_total(4) + 1._pr
         case default
             write(*,*)'proceso equivocado'
     end select
 
-    a(1)=k(1)*x(1)*inv_vol
-    a(2)=k(2)*x(2)*x(3)*inv_vol2
+    velocity(1) = velocity_cte(1)*species_total(1)*inv_vol
+    velocity(2) = velocity_cte(2)*species_total(2)*species_total(3)*inv_vol2
 
-    r=0._pr
+    velocities_sum = sum(velocity)
 
-    r = r + sum(a)
+end subroutine Gillespie_process
 
-end subroutine ejecuta_process
+subroutine consecutive_process(selected_process)
+    integer, intent(in)       :: selected_process
+
+    select case(selected_process)
+        case(1)
+            species_total(1) = species_total(1) - 1._pr
+            species_total(2) = species_total(2) + 1._pr
+        case(2)
+            species_total(2) = species_total(2) - 1._pr
+            species_total(3) = species_total(3) + 1._pr
+        case default
+            write(*,*)'proceso equivocado'
+    end select
+
+    velocity(1) = velocity_cte(1)*species_total(1)*inv_vol
+    velocity(2) = velocity_cte(2)*species_total(2)*inv_vol
+
+    velocities_sum = sum(velocity)
+
+end subroutine consecutive_process
+
+subroutine preyPredator_process(selected_process)
+    integer, intent(in)       :: selected_process
+
+    select case(selected_process)
+        case(1)
+            species_total(1) = species_total(1) + 1._pr
+        case(2)
+            species_total(1) = species_total(1) - 1._pr
+            species_total(2) = species_total(2) + 1._pr
+        case(3)
+            species_total(2) = species_total(2) - 1._pr
+        case default
+            write(*,*)'proceso equivocado'
+    end select
+
+    velocity(1) = velocity_cte(1)*species_total(1)
+    velocity(2) = velocity_cte(2)*species_total(2)*species_total(1)
+    velocity(3) = velocity_cte(3)*species_total(2)
+
+    velocities_sum = sum(velocity)
+
+end subroutine preyPredator_process
 
 
-subroutine select_process(r,nu)
-    real(pr),intent(in)     :: r        ! suma de velocidades
-    integer,intent(out)     :: nu       ! proceso seleccionado
-    real(pr)                :: c        ! numero aleatorio entre 0 y r
+subroutine select_process(selected_process)
+    integer, intent(out)    :: selected_process       ! proceso seleccionado
+    real(pr)                :: c        ! selected_processmero aleatorio entre 0 y r
     integer                 :: i        ! contador
-    real(pr)                :: suma
+    real(pr)                :: sum
 
-    c = rmzran()*r
+    c = rmzran()*velocities_sum
 
-    suma = 0._pr
+    sum = 0._pr
 
+    ! This section could be done with SUM() and int() functions but is left like this for clarity
     do i = 1, num_eqs
-        suma=suma+a(i)
-
-        if(c<suma)then
-            nu=i
+        sum = sum + velocity(i)
+        if (c < sum) then
+            selected_process = i
             exit
-        endif
-
-    enddo
+        end if
+    end do
 
 end subroutine select_process
 
-subroutine tiempo(r,tau)
-    real(pr),intent(in)     :: r        ! suma de velocidades
-    real(pr),intent(out)    :: tau      ! incremento de tiempo
+subroutine time(tau)
+    real(pr), intent(out)    :: tau      ! incremento de tiempo
 
-    tau = -log(rmzran())/r
+    tau = -log(rmzran())/velocities_sum
 
-end subroutine    tiempo
+end subroutine time
 
 
 END MODULE subrutinas
