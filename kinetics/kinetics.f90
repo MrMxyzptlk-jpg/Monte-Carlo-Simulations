@@ -6,8 +6,9 @@ PROGRAM KMC
     implicit none
 
     real(pr)                :: t, tau       ! time, time increment
-    integer                 :: i, unitnum, equations   ! counter, unit, system of eqs.
+    integer                 :: i, unitnum   ! counter, unit
     integer                 :: selected_process, iostat           ! selected process
+    character(len=15)       :: equations    ! system of equations
 
     abstract interface
         subroutine init()
@@ -44,21 +45,21 @@ PROGRAM KMC
 
         ! Select the system of equations to read the initial conditions of said system
         select case(equations)
-            case(1)
+            case("Gillespie")
                 initialize => Gillespie_init
                 doProcess  => Gillespie_process
 
                 num_eqs = 2
                 num_species = 4
 
-            case(2)
+            case("consecutive")
                 initialize => consecutive_init
                 doProcess  => consecutive_process
 
                 num_eqs = 2
                 num_species = 3
 
-            case(3)
+            case("preyPredator")
                 initialize => preyPredator_init
                 doProcess  => preyPredator_process
 
@@ -98,7 +99,7 @@ PROGRAM KMC
     print '(a,*(F8.4))', "velocity_cte  =", velocity_cte
 
 
-    open(newunit=unitnum,file=salida)
+    open(newunit=unitnum, file=salida)
         write(unitnum,*) "##    t     | species"
 
         do i = 1, max_iterations

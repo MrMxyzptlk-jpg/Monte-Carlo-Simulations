@@ -7,7 +7,7 @@
 /
 
 &tasks
-   equations = 1
+   equations = 'Gillespie'
 /
 
 &initial_conditions
