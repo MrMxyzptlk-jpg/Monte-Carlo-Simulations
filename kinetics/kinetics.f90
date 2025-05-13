@@ -49,22 +49,22 @@ PROGRAM KMC
                 initialize => Gillespie_init
                 doProcess  => Gillespie_process
 
-                num_eqs = 2
                 num_species = 4
+                num_eqs = 2
 
             case("Consecutive")
                 initialize => consecutive_init
                 doProcess  => consecutive_process
 
-                num_eqs = 2
                 num_species = 3
+                num_eqs = 2
 
             case("Prey-Predator")
                 initialize => preyPredator_init
                 doProcess  => preyPredator_process
 
-                num_eqs = 3
                 num_species = 2
+                num_eqs = 3
         end select
 
         ! This allocation MUST be done in order to read the initial conditions data

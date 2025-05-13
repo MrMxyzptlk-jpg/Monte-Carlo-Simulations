@@ -13,12 +13,20 @@ MODULE subrutinas
 
 contains
 
+subroutine update_velocitySum()
+    velocities_sum = sum(velocity)
+    if (velocities_sum == 0) then
+        print*, "Program stopping: no more possible progress. "
+        STOP
+    end if
+end subroutine
+
 subroutine Gillespie_init()
 
     velocity(1) = velocity_cte(1)*species_total(1)*inv_vol
     velocity(2) = velocity_cte(2)*species_total(2)*species_total(3)*inv_vol2
 
-    velocities_sum = sum(velocity)
+    call update_velocitySum()
 
 end subroutine Gillespie_init
 
@@ -27,7 +35,7 @@ subroutine consecutive_init()
     velocity(1) = velocity_cte(1)*species_total(1)*inv_vol
     velocity(2) = velocity_cte(2)*species_total(2)*inv_vol
 
-    velocities_sum = sum(velocity)
+    call update_velocitySum()
 
 end subroutine consecutive_init
 
@@ -37,7 +45,7 @@ subroutine preyPredator_init()
     velocity(2) = velocity_cte(2)*species_total(2)*species_total(1)
     velocity(3) = velocity_cte(3)*species_total(2)
 
-    velocities_sum = sum(velocity)
+    call update_velocitySum()
 
 end subroutine preyPredator_init
 
@@ -53,13 +61,13 @@ subroutine Gillespie_process(selected_process)
             species_total(3) = species_total(3) - 1._pr
             species_total(4) = species_total(4) + 1._pr
         case default
-            write(*,*)'proceso equivocado'
+            write(*,*)'Wrong process'
     end select
 
     velocity(1) = velocity_cte(1)*species_total(1)*inv_vol
     velocity(2) = velocity_cte(2)*species_total(2)*species_total(3)*inv_vol2
 
-    velocities_sum = sum(velocity)
+    call update_velocitySum()
 
 end subroutine Gillespie_process
 
@@ -74,13 +82,13 @@ subroutine consecutive_process(selected_process)
             species_total(2) = species_total(2) - 1._pr
             species_total(3) = species_total(3) + 1._pr
         case default
-            write(*,*)'proceso equivocado'
+            write(*,*)'Wrong process'
     end select
 
     velocity(1) = velocity_cte(1)*species_total(1)*inv_vol
     velocity(2) = velocity_cte(2)*species_total(2)*inv_vol
 
-    velocities_sum = sum(velocity)
+    call update_velocitySum()
 
 end subroutine consecutive_process
 
@@ -96,22 +104,22 @@ subroutine preyPredator_process(selected_process)
         case(3)
             species_total(2) = species_total(2) - 1._pr
         case default
-            write(*,*)'proceso equivocado'
+            write(*,*)'Wrong process'
     end select
 
     velocity(1) = velocity_cte(1)*species_total(1)
     velocity(2) = velocity_cte(2)*species_total(2)*species_total(1)
     velocity(3) = velocity_cte(3)*species_total(2)
 
-    velocities_sum = sum(velocity)
+    call update_velocitySum()
 
 end subroutine preyPredator_process
 
 
 subroutine select_process(selected_process)
-    integer, intent(out)    :: selected_process       ! proceso seleccionado
-    real(pr)                :: c        ! selected_processmero aleatorio entre 0 y r
-    integer                 :: i        ! contador
+    integer, intent(out)    :: selected_process
+    real(pr)                :: c
+    integer                 :: i
     real(pr)                :: sum
 
     c = rmzran()*velocities_sum
@@ -129,10 +137,10 @@ subroutine select_process(selected_process)
 
 end subroutine select_process
 
-subroutine time(tau)
-    real(pr), intent(out)    :: tau      ! incremento de tiempo
+subroutine time(time_increment)
+    real(pr), intent(out)    :: time_increment
 
-    tau = -log(rmzran())/velocities_sum
+    time_increment = -log(rmzran())/velocities_sum
 
 end subroutine time
 

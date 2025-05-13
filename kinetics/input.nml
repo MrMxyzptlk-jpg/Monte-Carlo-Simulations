@@ -1,25 +1,25 @@
 &physical
-    volume = 10
+    volume = 1
 /
 
 &calculation
-    max_iterations = 100
+    max_iterations = 10000
 /
 
 &tasks
-   equations = 'Gillespie' ! Options: 'Gillespie', 'Consecutive' or 'Prey-Predator'
+   equations = 'Prey-Predator' ! Options: 'Gillespie', 'Consecutive' or 'Prey-Predator'
 /
 
 &initial_conditions
     ! Gillespie equations' example
-    species_total = 100, 0, 20, 0,
-    velocity_cte  = 1, 1
+    !species_total = 100, 0, 20, 0,
+    !velocity_cte  = 1, 1
 
     ! Consecutive equations' example
-    ! species_total = 100, 0, 50,
-    ! velocity_cte  = 1, 1
+    !species_total = 100, 0, 50,
+    !velocity_cte  = 1, 1
 
     ! Prey-Predator equations' example
-    ! species_total = 100, 1,
-    ! velocity_cte  = 1, 1, 1
+    species_total = 2, 1,
+    velocity_cte  = 1, 1, 1
 /
