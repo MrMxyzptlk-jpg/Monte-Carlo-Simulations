@@ -3,9 +3,9 @@
     ray_tilt      = 0,
     E_min         = 0.5,
     E_max         = 30,
-    covering_thickness = 2e-6,
-    covering         = .false.,
+    covering      = .false.,
     surface_material = "Au",
+    covering_thickness = 2e-6,
 /
 
 &calculation
@@ -15,6 +15,5 @@
 /
 
 &tasks
-    particle_type = "electrons",
     track_trajectories = .true.
 /
