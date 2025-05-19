@@ -93,128 +93,142 @@ subroutine init_materials(bulk_material, surface_material, covering, covering_th
 
 end subroutine init_materials
 
-subroutine electron_init(this, x0, y0, z0)
-    class(Electron), intent(inout) :: this
+subroutine electron_init(particle, x0, y0, z0)
+    class(Electron), intent(inout) :: particle
     real(pr), intent(in) :: x0, y0, z0
 
-    this%x = x0; this%y = y0; this%z = z0
-    this%cx = cos_tilt(1); this%cy = cos_tilt(2); this%cz = cos_tilt(3)
-    this%energy = Emax
+    particle%x = x0; particle%y = y0; particle%z = z0
+    particle%cx = cos_tilt(1); particle%cy = cos_tilt(2); particle%cz = cos_tilt(3)
+    particle%energy = Emax
 end subroutine electron_init
 
-subroutine move(this, RanA, RanB, RanC)
-    class(Electron), intent(inout) :: this
+subroutine move(particle, RanA, RanB, RanC)
+    class(Electron), intent(inout) :: particle
     real(pr), intent(in) :: RanA, RanB, RanC
-    real(pr) :: psi, c_phi, AM, AN, V1, V2, V3, V4
+    real(pr) :: theta, cos_theta, sin_theta, cos_phi, sin_phi
+    real(pr) :: xzDirection_x, xzDirection_z, direction_z, direction_x, xz_norm
 
-    if (this%z >= 0.0_pr) then
-        this%x_old = this%x; this%y_old = this%y; this%z_old = this%z
-        this%step_length = this%step(RanA)
-        psi = 2*pi*RanB
-        c_phi = this%cos_scat_angle(RanC)
-        AM = -(this%cx / this%cz)
-        AN = 1.0_pr / sqrt(1.0_pr + AM*AM)
-        V1 = AN * sqrt(1.0_pr - c_phi*c_phi)
-        V2 = AN * AM * sqrt(1.0_pr - c_phi*c_phi)
-        V3 = cos(psi)
-        V4 = sin(psi)
+    if (particle%z >= 0.0_pr) then
+        particle%x_old = particle%x; particle%y_old = particle%y; particle%z_old = particle%z   ! Saving previous coordinates
 
-        this%ca = this%cx*c_phi + V1*V3 + this%cy*V2*V4
-        this%cb = this%cy*c_phi + V4*(this%cz*V1 - this%cx*V2)
-        this%cc = this%cz*c_phi + V2*V3 - this%cy*V1*V4
+        ! Calculating in the particle's reference frame (velocity along z')
+        particle%step_length = particle%step(RanA)  ! Random step using exponential decay
+        theta = 2._pr*pi*RanB                       ! Random angle from uniform distribution
+        cos_phi = particle%cos_scat_angle(RanC)     ! Random azimuth angle from formula (see eq. 10 from Saenz. et al. 2016)
 
-        this%x = this%x + this%step_length*this%ca
-        this%y = this%y + this%step_length*this%cb
-        this%z = this%z + this%step_length*this%cc
+        sin_phi = sqrt(1.0_pr - cos_phi*cos_phi)    ! To avoid recalculation
+        cos_theta = cos(theta)                      ! To avoid recalculation
+        sin_theta = sin(theta)                      ! To avoid recalculation
+
+        xz_norm = sqrt(particle%cx*particle%cx + particle%cz*particle%cz)
+
+        if (xz_norm > tiny(1._pr)) then                 ! Avoid unstable division
+            xzDirection_z  = particle%cz / xz_norm      ! z direction cosine in the x-z plane
+            xzDirection_x  = particle%cx / xz_norm      ! x direction cosine in the x-z plane
+            direction_z    = xzDirection_z * sin_phi    ! z direction cosine
+            direction_x    = -xzDirection_x * sin_phi   ! x direction cosine
+        else    ! As a first approximation
+            direction_z = 0._pr     ! z direction cosine
+            direction_x = 0._pr     ! x direction cosine
+        end if
+
+        ! Rotate back to original reference frame
+        particle%ca = particle%cx*cos_phi + direction_z*cos_theta + particle%cy*direction_x*sin_theta     ! New displacement component along x
+        particle%cb = particle%cy*cos_phi + sin_theta*(particle%cz*direction_z - particle%cx*direction_x) ! New displacement component along y
+        particle%cc = particle%cz*cos_phi + direction_x*cos_theta - particle%cy*direction_z*sin_theta     ! New displacement component along z
+
+        particle%x = particle%x + particle%step_length*particle%ca
+        particle%y = particle%y + particle%step_length*particle%cb
+        particle%z = particle%z + particle%step_length*particle%cc
     else
-        this%x = this%x + (this%x - this%x_old)
-        this%y = this%y + (this%y - this%y_old)
-        this%z = this%z + (this%z - this%z_old)
+        particle%x = particle%x + (particle%x - particle%x_old)
+        particle%y = particle%y + (particle%y - particle%y_old)
+        particle%z = particle%z + (particle%z - particle%z_old)
     end if
 end subroutine move
 
-subroutine do_step(this, RanA, RanB, RanC)
-    class(Electron), intent(inout) :: this
+subroutine do_step(particle, RanA, RanB, RanC)
+    class(Electron), intent(inout) :: particle
     real(pr), intent(in) :: RanA, RanB, RanC
-    call this%move(RanA, RanB, RanC)
-    call this%update()
+    call particle%move(RanA, RanB, RanC)
+    call particle%update()
 end subroutine do_step
 
-function step(this, RanA) result(s)
-    class(Electron), intent(in) :: this
+function step(particle, RanA) result(s)
+    class(Electron), intent(in) :: particle
     real(pr), intent(in) :: RanA
     real(pr) :: s
-    s = -this%lambda() * log(RanA)
+    s = -particle%lambda() * log(RanA)
 end function step
 
-function lambda(this) result(lmbd)
-    class(Electron), intent(in) :: this
+function lambda(particle) result(lmbd)
+    class(Electron), intent(in) :: particle
     real(pr) :: lmbd
-    if (this%z < 2e-6_pr .and. this%z > 0.0_pr) then
-        lmbd = Af / (NA * Rhof * this%sigma_e())
+    if (particle%z < film_thickness .and. particle%z > 0.0_pr) then
+        lmbd = Af / (NA * Rhof * particle%sigma_e())
     else
-        lmbd = A / (NA * Rho * this%sigma_e())
+        lmbd = A / (NA * Rho * particle%sigma_e())
     end if
 end function lambda
 
-function sigma_e(this) result(sigma)
-    class(Electron), intent(in) :: this
+function sigma_e(particle) result(sigma)
+    class(Electron), intent(in) :: particle
     real(pr) :: sigma, Zval, E
     real(pr) :: alpha_val
 
-    if (this%z < 2e-6_pr .and. this%z > 0.0_pr) then
+    if (particle%z < 2e-6_pr .and. particle%z > 0.0_pr) then
         Zval = Zf
-        alpha_val = this%alpha(Zf67)
+        alpha_val = particle%alpha(Zf67)
     else
         Zval = Z
-        alpha_val = this%alpha(Z67)
+        alpha_val = particle%alpha(Z67)
     end if
 
-    E = this%energy
-    sigma = 5.21e-21_pr * (Zval / E)**2 * (4._pr*pi / (alpha_val * (1 + alpha_val))) * ((E + 511.0_pr)/(E + 1024.0_pr))**2
+    E = particle%energy
+    sigma = 5.21e-21_pr * (Zval / E)**2 * (4._pr*pi / (alpha_val * (1._pr + alpha_val))) * ((E + 511.0_pr)/(E + 1024.0_pr))**2
 end function sigma_e
 
-function alpha(this, Zp67) result(a)
-    class(Electron), intent(in) :: this
+function alpha(particle, Zp67) result(a)
+    class(Electron), intent(in) :: particle
     real(pr), intent(in) :: Zp67
     real(pr) :: a
-    a = 3.4e-3_pr * Zp67 / this%energy
+    a = 3.4e-3_pr * Zp67 / particle%energy
 end function alpha
 
-function cos_scat_angle(this, RanC) result(cos_phi)
-    class(Electron), intent(in) :: this
+function cos_scat_angle(particle, RanC) result(cos_phi)
+    class(Electron), intent(in) :: particle
     real(pr), intent(in) :: RanC
     real(pr) :: cos_phi
     real(pr) :: alpha_val
 
-    if (this%z < film_thickness .and. this%z > 0.0_pr) then
-        alpha_val = this%alpha(Zf67)
+    if (particle%z < film_thickness .and. particle%z > 0.0_pr) then
+        alpha_val = particle%alpha(Zf67)
     else
-        alpha_val = this%alpha(Z67)
+        alpha_val = particle%alpha(Z67)
     end if
 
     cos_phi = 1.0_pr - (2.0_pr * alpha_val * RanC) / (1.0_pr + alpha_val - RanC)
 end function cos_scat_angle
 
-function dE_dS(this) result(de)
-    class(Electron), intent(in) :: this
+function dE_dS(particle) result(de)
+    class(Electron), intent(in) :: particle
     real(pr) :: de, Jval, Zval, Aval
-    if (this%z < film_thickness .and. this%z > 0.0_pr) then
+    if (particle%z < film_thickness .and. particle%z > 0.0_pr) then
         Zval = Zf; Aval = Af; Jval = Jf
     else
         Zval = Z; Aval = A; Jval = J
     end if
-    de = 78500.0_pr * (Zval / (Aval * this%energy)) * log(1.166_pr*(this%energy + 0.85_pr*Jval)/Jval)
+    de = 78500.0_pr * (Zval / (Aval * particle%energy)) * log(1.166_pr*(particle%energy + 0.85_pr*Jval)/Jval)
 end function dE_dS
 
-subroutine update(this)
-    class(Electron), intent(inout) :: this
-    if (this%z < film_thickness .and. this%z > 0.0_pr) then
-        this%energy = this%energy - this%step_length * Rhof * this%dE_dS()
+subroutine update(particle)
+    class(Electron), intent(inout) :: particle
+    if (particle%z < film_thickness .and. particle%z > 0.0_pr) then
+        particle%energy = particle%energy - particle%step_length * Rhof * particle%dE_dS()
     else
-        this%energy = this%energy - this%step_length * Rho * this%dE_dS()
+        particle%energy = particle%energy - particle%step_length * Rho * particle%dE_dS()
     end if
-    this%cx = this%ca; this%cy = this%cb; this%cz = this%cc
+    particle%cx = particle%ca; particle%cy = particle%cb; particle%cz = particle%cc
 end subroutine update
 
 subroutine track_trajectory(unit, step, x, y, z, energy)

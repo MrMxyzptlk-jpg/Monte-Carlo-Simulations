@@ -9,7 +9,7 @@ program electron_scatter
     integer                     :: Num_electrons, Num_trajectories
     integer                     :: i, nBSE, step
     type(Electron), allocatable :: sample(:)
-    real(pr)                    :: R1, R2, R3, covering_thickness, ray_tilt, BSE_tol
+    real(pr)                    :: covering_thickness, ray_tilt, BSE_tol
     character(len=30)           :: traj_file, electron_id
     character(len=15)           :: particle_type, bulk_material, surface_material
     integer                     :: traj_unit, unitnum
@@ -27,22 +27,22 @@ program electron_scatter
 
     ! DEFAULT SETTINGS
         ! Physical problems' characteristics
-        bulk_material    = "Au"
-        covering         = .false.
-        surface_material = "Au"
-        ray_tilt         = 45._pr
-        covering_thickness = 2e-6_pr
-        E_min              = 0.5_pr ! keV
-        E_max              = 30._pr ! keV
+        bulk_material       = "Au"
+        covering            = .false.
+        surface_material    = "Au"
+        ray_tilt            = 45._pr
+        covering_thickness  = 2e-6_pr
+        E_min               = 0.5_pr ! keV
+        E_max               = 30._pr ! keV
 
         !Calculation settings
-        Num_electrons = 250
-        Num_trajectories = 10
-        BSE_tol = 1e-6
+        Num_electrons       = 250
+        Num_trajectories    = 10
+        BSE_tol             = 1e-6
 
         ! Tasks
-        particle_type = "electrons"
-        track_trajectories = .false.
+        particle_type       = "electrons"
+        track_trajectories  = .false.
 
     ! Read from input file
     open(newunit=unitnum, file="input.nml", status="old", action="read")
@@ -67,13 +67,12 @@ program electron_scatter
             do i = 1, Num_trajectories
                 ! Open trajectory file
                 write(electron_id, '(I6.6".dat")') i
-                electron_id = adjustl(trim(electron_id))
-                traj_file = "datos/trajectory_id_"//electron_id
+                traj_file = "datos/trajectory_id_"//adjustl(trim(electron_id))
                 open(newunit=traj_unit, file=traj_file, status="replace", action="write")
                 write(traj_unit, format_style_header) "## Step", "|", "x","|","y","|", "z","|","Energy"
 
                 ! Initialize particle
-                call sample(i)%init(0.0_pr, 0.0_pr, 0.0_pr)
+                call sample(i)%init(0.0_pr, 0.0_pr, 0._pr)
                 call MC_step(sample, i)
                 step = 0
 

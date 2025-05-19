@@ -5,7 +5,7 @@
     E_max         = 30,
     covering      = .false.,
     surface_material = "Au",
-    covering_thickness = 2e-6,
+    covering_thickness = 1e-4,
 /
 
 &calculation
