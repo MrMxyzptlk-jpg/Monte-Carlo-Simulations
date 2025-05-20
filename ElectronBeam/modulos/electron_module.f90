@@ -11,8 +11,8 @@ module electron_module
     type :: Electron
         real(pr) :: x, y, z
         real(pr) :: x_old, y_old, z_old
-        real(pr) :: cx, cy, cz
-        real(pr) :: ca, cb, cc
+        real(pr) :: v_x, v_y, v_z
+        real(pr) :: r_x, r_y, r_z
         real(pr) :: energy
         real(pr) :: step_length
         contains
@@ -98,13 +98,13 @@ subroutine electron_init(particle, x0, y0, z0)
     real(pr), intent(in) :: x0, y0, z0
 
     particle%x = x0; particle%y = y0; particle%z = z0
-    particle%cx = cos_tilt(1); particle%cy = cos_tilt(2); particle%cz = cos_tilt(3)
+    particle%v_x = cos_tilt(1); particle%v_y = cos_tilt(2); particle%v_z = cos_tilt(3)
     particle%energy = Emax
 end subroutine electron_init
 
-subroutine move(particle, RanA, RanB, RanC)
+subroutine move(particle, Rnd_1, Rnd_2, Rnd_3)
     class(Electron), intent(inout) :: particle
-    real(pr), intent(in) :: RanA, RanB, RanC
+    real(pr), intent(in) :: Rnd_1, Rnd_2, Rnd_3
     real(pr) :: theta, cos_theta, sin_theta, cos_phi, sin_phi
     real(pr) :: U1, U2, norm
 
@@ -112,43 +112,43 @@ subroutine move(particle, RanA, RanB, RanC)
         particle%x_old = particle%x; particle%y_old = particle%y; particle%z_old = particle%z   ! Saving previous coordinates
 
         ! Calculating in the particle's coordinate system (velocity along z')
-        particle%step_length = particle%step(RanA)  ! Random step using exponential decay
-        theta = 2._pr*pi*RanB                       ! Random angle from uniform distribution
-        cos_phi = particle%cos_scat_angle(RanC)     ! Random azimuth angle from formula (see eq. 10 from Saenz. et al. 2016)
+        particle%step_length = particle%step(Rnd_1)  ! Random step using exponential decay
+        theta = 2._pr*pi*Rnd_2                       ! Random angle from uniform distribution
+        cos_phi = particle%cos_scat_angle(Rnd_3)     ! Random azimuth angle from formula (see eq. 10 from Saenz. et al. 2016)
 
         sin_phi = sqrt(1.0_pr - cos_phi*cos_phi)    ! To avoid recalculation
         cos_theta = cos(theta)                      ! To avoid recalculation
         sin_theta = sin(theta)                      ! To avoid recalculation
 
-        norm = sqrt(particle%cx*particle%cx + particle%cz*particle%cz)
+        norm = sqrt(particle%v_x*particle%v_x + particle%v_z*particle%v_z)
 
         if (norm > tiny(1._pr)) then    ! Avoid unstable division
             ! Realative to y axis
-            U1  = -particle%cz * sin_phi / norm
-            U2  = particle%cx * sin_phi / norm
+            U1  = -particle%v_z * sin_phi / norm
+            U2  = particle%v_x * sin_phi / norm
 
             ! Rotate back to original reference frame
-            particle%ca = particle%cx*cos_phi + U1*cos_theta + particle%cy*U2*sin_theta     ! New displacement component along x
-            particle%cb = particle%cy*cos_phi + sin_theta*(particle%cz*U1 - particle%cx*U2) ! New displacement component along y
-            particle%cc = particle%cz*cos_phi + U2*cos_theta - particle%cy*U1*sin_theta     ! New displacement component along z
+            particle%r_x = particle%v_x*cos_phi + U1*cos_theta + particle%v_y*U2*sin_theta     ! New displacement component along x
+            particle%r_y = particle%v_y*cos_phi + sin_theta*(particle%v_z*U1 - particle%v_x*U2) ! New displacement component along y
+            particle%r_z = particle%v_z*cos_phi + U2*cos_theta - particle%v_y*U1*sin_theta     ! New displacement component along z
 
         else    ! Use alternate reference frame
-            norm = sqrt(particle%cy*particle%cy + particle%cz*particle%cz)
+            norm = sqrt(particle%v_y*particle%v_y + particle%v_z*particle%v_z)
 
             ! Realative to x axis
-            U1  = -particle%cz * sin_phi / norm
-            U2  = particle%cy * sin_phi / norm
+            U1  = -particle%v_z * sin_phi / norm
+            U2  = particle%v_y * sin_phi / norm
 
             ! Rotate back to original reference frame
-            particle%ca = particle%cx*cos_phi + sin_theta*(particle%cz*U1 - particle%cy*U2)
-            particle%cb = particle%cy*cos_phi + U1*cos_theta + particle%cx*U2*sin_theta
-            particle%cc = particle%cz*cos_phi + U2*cos_theta - particle%cx*U1*sin_theta
+            particle%r_x = particle%v_x*cos_phi + sin_theta*(particle%v_z*U1 - particle%v_y*U2)
+            particle%r_y = particle%v_y*cos_phi + U1*cos_theta + particle%v_x*U2*sin_theta
+            particle%r_z = particle%v_z*cos_phi + U2*cos_theta - particle%v_x*U1*sin_theta
 
         end if
 
-        particle%x = particle%x + particle%step_length*particle%ca
-        particle%y = particle%y + particle%step_length*particle%cb
-        particle%z = particle%z + particle%step_length*particle%cc
+        particle%x = particle%x + particle%step_length*particle%r_x
+        particle%y = particle%y + particle%step_length*particle%r_y
+        particle%z = particle%z + particle%step_length*particle%r_z
     else
         particle%x = particle%x + (particle%x - particle%x_old)
         particle%y = particle%y + (particle%y - particle%y_old)
@@ -156,17 +156,27 @@ subroutine move(particle, RanA, RanB, RanC)
     end if
 end subroutine move
 
-subroutine do_step(particle, RanA, RanB, RanC)
+subroutine update(particle)
     class(Electron), intent(inout) :: particle
-    real(pr), intent(in) :: RanA, RanB, RanC
-    call particle%move(RanA, RanB, RanC)
+    if (particle%z < film_thickness .and. particle%z > 0.0_pr) then
+        particle%energy = particle%energy - particle%step_length * Rhof * particle%dE_dS()
+    else
+        particle%energy = particle%energy - particle%step_length * Rho * particle%dE_dS()
+    end if
+    particle%v_x = particle%r_x; particle%v_y = particle%r_y; particle%v_z = particle%r_z
+end subroutine update
+
+subroutine do_step(particle, Rnd_1, Rnd_2, Rnd_3)
+    class(Electron), intent(inout) :: particle
+    real(pr), intent(in) :: Rnd_1, Rnd_2, Rnd_3
+    call particle%move(Rnd_1, Rnd_2, Rnd_3)
     call particle%update()
 end subroutine do_step
 
-real(pr) function step(particle, RanA) result(s)
+real(pr) function step(particle, Rnd_1)
     class(Electron), intent(in) :: particle
-    real(pr), intent(in) :: RanA
-    step = -particle%lambda() * log(RanA)
+    real(pr), intent(in) :: Rnd_1
+    step = -particle%lambda() * log(Rnd_1)
 end function step
 
 real(pr) function lambda(particle)
@@ -201,9 +211,9 @@ real(pr) function alpha(particle, Zp67)
     alpha = 3.4e-3_pr * Zp67 / particle%energy
 end function alpha
 
-function cos_scat_angle(particle, RanC) result(cos_phi)
+function cos_scat_angle(particle, Rnd_3) result(cos_phi)
     class(Electron), intent(in) :: particle
-    real(pr), intent(in) :: RanC
+    real(pr), intent(in) :: Rnd_3
     real(pr) :: cos_phi
     real(pr) :: alpha_val
 
@@ -213,7 +223,7 @@ function cos_scat_angle(particle, RanC) result(cos_phi)
         alpha_val = particle%alpha(Z67)
     end if
 
-    cos_phi = 1.0_pr - (2.0_pr * alpha_val * RanC) / (1.0_pr + alpha_val - RanC)
+    cos_phi = 1.0_pr - (2.0_pr * alpha_val * Rnd_3) / (1.0_pr + alpha_val - Rnd_3)
 end function cos_scat_angle
 
 function dE_dS(particle) result(de)
@@ -226,16 +236,6 @@ function dE_dS(particle) result(de)
     end if
     de = 78500.0_pr * (Zval / (Aval * particle%energy)) * log(1.166_pr*(particle%energy + 0.85_pr*Jval)/Jval)
 end function dE_dS
-
-subroutine update(particle)
-    class(Electron), intent(inout) :: particle
-    if (particle%z < film_thickness .and. particle%z > 0.0_pr) then
-        particle%energy = particle%energy - particle%step_length * Rhof * particle%dE_dS()
-    else
-        particle%energy = particle%energy - particle%step_length * Rho * particle%dE_dS()
-    end if
-    particle%cx = particle%ca; particle%cy = particle%cb; particle%cz = particle%cc
-end subroutine update
 
 subroutine track_trajectory(unit, step, x, y, z, energy)
     implicit none

@@ -58,34 +58,34 @@ Where:
 - $\varphi'$ is the polar (scattering) angle in the primed coordinate system.
 - $\vec{u_2}, \vec{u_2}$ are unit vectors perpendicular to each other and to \frac{\vec{v}}{|\vec{v}|}, forming a right-hand basis.
 
-In our specific implementation we select $\hat{z}' = \frac{\vec{v}}{|\vec{v}|} = (c_x,c_y,c_z)$ and $\hat{x}' = \frac{\hat{z}'\times\hat{y}}{|\hat{z}'\times\hat{y}|}$ which leads directly to:
+In our specific implementation we select $\hat{z}' = (v_x,v_y,v_z)$ and $\hat{x}' = \frac{\hat{z}'\times\hat{y}}{|\hat{z}'\times\hat{y}|}$ which leads directly to:
 
 ```math
     \begin{cases}
-      \hat{z}' = \frac{\vec{v}}{|\vec{v}|}\\
-      \hat{x}' = \frac{1}{\sqrt{c_x^2 + c_z^2}}(c_x, 0,-c_z)\\
-      \hat{x}' = \frac{1}{\sqrt{c_x^2 + c_z^2}}(-c_yc_z, 2c_xc_z,-c_yc_x)
+      \hat{z}' = (v_x,v_y,v_z)\\
+      \hat{x}' = \frac{1}{\sqrt{v_x^2 + v_z^2}}(v_x, 0,-v_z)\\
+      \hat{x}' = \frac{1}{\sqrt{v_x^2 + v_z^2}}(-v_yv_z, 2v_xv_z,-v_yv_x)
     \end{cases}\,
 ```
-Finally, taking $U_1 = \frac{-c_zsin(\varphi')}{\sqrt{c_x^2 + c_z^2}}$, $U_2 = \frac{c_xsin(\varphi')}{\sqrt{c_x^2 + c_z^2}}$ and $\frac{\Delta \vec{r'}}{|\Delta \vec{r'}|} = (c_a, c_b, c_c)$ the rotation formula in matrix form becomes:
+Finally, taking $U_1 = \frac{-v_zsin(\varphi')}{\sqrt{v_x^2 + v_z^2}}$, $U_2 = \frac{v_xsin(\varphi')}{\sqrt{v_x^2 + v_z^2}}$ and $\frac{\Delta \vec{r'}}{|\Delta \vec{r'}|} = (r_x, r_y, r_z)$ the rotation formula in matrix form becomes:
 ```math
 \begin{bmatrix}
-c_a \\
-c_b \\
-c_c
+r_x \\
+r_y \\
+r_z
 \end{bmatrix}
 =
 \cos(\varphi')
 \begin{bmatrix}
-c_x \\
-c_y \\
-c_z
+v_x \\
+v_y \\
+v_z
 \end{bmatrix}
 +
 \begin{bmatrix}
-U_1 \cos(\theta') + c_y U_2 \sin(\theta') \\
-\sin(\theta')(c_z U_1 - c_x U_2) \\
-U_2 \cos(\theta') - c_y U_1 \sin(\theta')
+U_1 \cos(\theta') + v_y U_2 \sin(\theta') \\
+\sin(\theta')(v_z U_1 - v_x U_2) \\
+U_2 \cos(\theta') - v_y U_1 \sin(\theta')
 \end{bmatrix}
 ```
 
