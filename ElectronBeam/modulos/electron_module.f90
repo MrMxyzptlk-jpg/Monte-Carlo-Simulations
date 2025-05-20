@@ -163,26 +163,24 @@ subroutine do_step(particle, RanA, RanB, RanC)
     call particle%update()
 end subroutine do_step
 
-function step(particle, RanA) result(s)
+real(pr) function step(particle, RanA) result(s)
     class(Electron), intent(in) :: particle
     real(pr), intent(in) :: RanA
-    real(pr) :: s
-    s = -particle%lambda() * log(RanA)
+    step = -particle%lambda() * log(RanA)
 end function step
 
-function lambda(particle) result(lmbd)
+real(pr) function lambda(particle)
     class(Electron), intent(in) :: particle
-    real(pr) :: lmbd
     if (particle%z < film_thickness .and. particle%z > 0.0_pr) then
-        lmbd = Af / (NA * Rhof * particle%sigma_e())
+        lambda = Af / (NA * Rhof * particle%sigma_e())
     else
-        lmbd = A / (NA * Rho * particle%sigma_e())
+        lambda = A / (NA * Rho * particle%sigma_e())
     end if
 end function lambda
 
-function sigma_e(particle) result(sigma)
+real(pr) function sigma_e(particle)
     class(Electron), intent(in) :: particle
-    real(pr) :: sigma, Zval, E
+    real(pr) :: Zval, E
     real(pr) :: alpha_val
 
     if (particle%z < 2e-6_pr .and. particle%z > 0.0_pr) then
@@ -194,14 +192,13 @@ function sigma_e(particle) result(sigma)
     end if
 
     E = particle%energy
-    sigma = 5.21e-21_pr * (Zval / E)**2 * (4._pr*pi / (alpha_val * (1._pr + alpha_val))) * ((E + 511.0_pr)/(E + 1024.0_pr))**2
+    sigma_e = 5.21e-21_pr * (Zval / E)**2 * (4._pr*pi / (alpha_val * (1._pr + alpha_val))) * ((E + 511.0_pr)/(E + 1024.0_pr))**2
 end function sigma_e
 
-function alpha(particle, Zp67) result(a)
+real(pr) function alpha(particle, Zp67)
     class(Electron), intent(in) :: particle
     real(pr), intent(in) :: Zp67
-    real(pr) :: a
-    a = 3.4e-3_pr * Zp67 / particle%energy
+    alpha = 3.4e-3_pr * Zp67 / particle%energy
 end function alpha
 
 function cos_scat_angle(particle, RanC) result(cos_phi)
