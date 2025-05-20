@@ -27,7 +27,7 @@ program electron_scatter
 
     ! DEFAULT SETTINGS
         ! Physical problems' characteristics
-        bulk_material       = "Au"
+        bulk_material       = "C"
         covering            = .false.
         surface_material    = "Au"
         ray_tilt            = 45._pr
@@ -36,9 +36,9 @@ program electron_scatter
         E_max               = 30._pr ! keV
 
         !Calculation settings
-        Num_electrons       = 250
-        Num_trajectories    = 10
-        BSE_tol             = 1e-6
+        Num_electrons       = 1000
+        Num_trajectories    = 250
+        BSE_tol             = 0
 
         ! Tasks
         particle_type       = "electrons"

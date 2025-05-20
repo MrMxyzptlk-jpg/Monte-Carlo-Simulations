@@ -106,12 +106,12 @@ subroutine move(particle, RanA, RanB, RanC)
     class(Electron), intent(inout) :: particle
     real(pr), intent(in) :: RanA, RanB, RanC
     real(pr) :: theta, cos_theta, sin_theta, cos_phi, sin_phi
-    real(pr) :: xzDirection_x, xzDirection_z, direction_z, direction_x, xz_norm
+    real(pr) :: U1, U2, norm
 
     if (particle%z >= 0.0_pr) then
         particle%x_old = particle%x; particle%y_old = particle%y; particle%z_old = particle%z   ! Saving previous coordinates
 
-        ! Calculating in the particle's reference frame (velocity along z')
+        ! Calculating in the particle's coordinate system (velocity along z')
         particle%step_length = particle%step(RanA)  ! Random step using exponential decay
         theta = 2._pr*pi*RanB                       ! Random angle from uniform distribution
         cos_phi = particle%cos_scat_angle(RanC)     ! Random azimuth angle from formula (see eq. 10 from Saenz. et al. 2016)
@@ -120,22 +120,31 @@ subroutine move(particle, RanA, RanB, RanC)
         cos_theta = cos(theta)                      ! To avoid recalculation
         sin_theta = sin(theta)                      ! To avoid recalculation
 
-        xz_norm = sqrt(particle%cx*particle%cx + particle%cz*particle%cz)
+        norm = sqrt(particle%cx*particle%cx + particle%cz*particle%cz)
 
-        if (xz_norm > tiny(1._pr)) then                 ! Avoid unstable division
-            xzDirection_z  = particle%cz / xz_norm      ! z direction cosine in the x-z plane
-            xzDirection_x  = particle%cx / xz_norm      ! x direction cosine in the x-z plane
-            direction_z    = xzDirection_z * sin_phi    ! z direction cosine
-            direction_x    = -xzDirection_x * sin_phi   ! x direction cosine
-        else    ! As a first approximation
-            direction_z = 0._pr     ! z direction cosine
-            direction_x = 0._pr     ! x direction cosine
+        if (norm > tiny(1._pr)) then    ! Avoid unstable division
+            ! Realative to y axis
+            U1  = -particle%cz * sin_phi / norm
+            U2  = particle%cx * sin_phi / norm
+
+            ! Rotate back to original reference frame
+            particle%ca = particle%cx*cos_phi + U1*cos_theta + particle%cy*U2*sin_theta     ! New displacement component along x
+            particle%cb = particle%cy*cos_phi + sin_theta*(particle%cz*U1 - particle%cx*U2) ! New displacement component along y
+            particle%cc = particle%cz*cos_phi + U2*cos_theta - particle%cy*U1*sin_theta     ! New displacement component along z
+
+        else    ! Use alternate reference frame
+            norm = sqrt(particle%cy*particle%cy + particle%cz*particle%cz)
+
+            ! Realative to x axis
+            U1  = -particle%cz * sin_phi / norm
+            U2  = particle%cy * sin_phi / norm
+
+            ! Rotate back to original reference frame
+            particle%ca = particle%cx*cos_phi + sin_theta*(particle%cz*U1 - particle%cy*U2)
+            particle%cb = particle%cy*cos_phi + U1*cos_theta + particle%cx*U2*sin_theta
+            particle%cc = particle%cz*cos_phi + U2*cos_theta - particle%cx*U1*sin_theta
+
         end if
-
-        ! Rotate back to original reference frame
-        particle%ca = particle%cx*cos_phi + direction_z*cos_theta + particle%cy*direction_x*sin_theta     ! New displacement component along x
-        particle%cb = particle%cy*cos_phi + sin_theta*(particle%cz*direction_z - particle%cx*direction_x) ! New displacement component along y
-        particle%cc = particle%cz*cos_phi + direction_x*cos_theta - particle%cy*direction_z*sin_theta     ! New displacement component along z
 
         particle%x = particle%x + particle%step_length*particle%ca
         particle%y = particle%y + particle%step_length*particle%cb
